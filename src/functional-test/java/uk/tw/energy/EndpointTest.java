@@ -42,17 +42,17 @@ public class EndpointTest {
     @Test
     public void givenMeterIdShouldReturnAMeterReadingAssociatedWithMeterId() throws JsonProcessingException {
         String smartMeterId = "bob";
-        populateMeterReadingsForMeter(smartMeterId);
+        MeterReadings readings = populateMeterReadingsForMeter(smartMeterId);
 
         ResponseEntity<String> response = restTemplate.getForEntity("/readings/read/" + smartMeterId, String.class);
         List<ElectricityReading> actualList = mapper.readValue(response.getBody(),
                 new TypeReference<List<ElectricityReading>>() {
                 });
 
-        List<ElectricityReading> expectedList = new ArrayList<>();
+        List<ElectricityReading> expectedList = readings.getElectricityReadings();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(actualList).isEqualTo(expectedList);
+        assertThat(actualList).hasSameElementsAs(expectedList);
     }
 
     @Test
@@ -82,12 +82,13 @@ public class EndpointTest {
         return (HttpEntity<String>) new HttpEntity(jsonMeterData, headers);
     }
 
-    private void populateMeterReadingsForMeter(String smartMeterId) throws JsonProcessingException {
+    private MeterReadings populateMeterReadingsForMeter(String smartMeterId) throws JsonProcessingException {
         MeterReadings readings = new MeterReadingsBuilder().setSmartMeterId(smartMeterId)
                 .generateElectricityReadings(20)
                 .build();
 
         HttpEntity<String> entity = getStringHttpEntity(readings);
         restTemplate.postForEntity("/readings/store", entity, String.class);
+        return readings;
     }
 }
