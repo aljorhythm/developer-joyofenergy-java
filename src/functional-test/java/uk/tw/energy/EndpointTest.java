@@ -1,6 +1,7 @@
 package uk.tw.energy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import uk.tw.energy.builders.MeterReadingsBuilder;
+import uk.tw.energy.domain.ElectricityReading;
 import uk.tw.energy.domain.MeterReadings;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,11 +42,17 @@ public class EndpointTest {
     @Test
     public void givenMeterIdShouldReturnAMeterReadingAssociatedWithMeterId() throws JsonProcessingException {
         String smartMeterId = "bob";
-        populateMeterReadingsForMeter(smartMeterId);
+        MeterReadings readings = populateMeterReadingsForMeter(smartMeterId);
 
         ResponseEntity<String> response = restTemplate.getForEntity("/readings/read/" + smartMeterId, String.class);
+        List<ElectricityReading> actualList = mapper.readValue(response.getBody(),
+                new TypeReference<List<ElectricityReading>>() {
+                });
+
+        List<ElectricityReading> expectedList = readings.getElectricityReadings();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(actualList).containsAll(expectedList);
     }
 
     @Test
@@ -71,12 +82,13 @@ public class EndpointTest {
         return (HttpEntity<String>) new HttpEntity(jsonMeterData, headers);
     }
 
-    private void populateMeterReadingsForMeter(String smartMeterId) throws JsonProcessingException {
+    private MeterReadings populateMeterReadingsForMeter(String smartMeterId) throws JsonProcessingException {
         MeterReadings readings = new MeterReadingsBuilder().setSmartMeterId(smartMeterId)
                 .generateElectricityReadings(20)
                 .build();
 
         HttpEntity<String> entity = getStringHttpEntity(readings);
         restTemplate.postForEntity("/readings/store", entity, String.class);
+        return readings;
     }
 }
