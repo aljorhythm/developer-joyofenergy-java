@@ -52,7 +52,7 @@ public class EndpointTest {
         List<ElectricityReading> expectedList = readings.getElectricityReadings();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(actualList).hasSameElementsAs(expectedList);
+        assertThat(actualList).containsAll(expectedList);
     }
 
     @Test
